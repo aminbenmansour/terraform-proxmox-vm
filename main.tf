@@ -1,22 +1,31 @@
 resource "proxmox_virtual_environment_download_file" "cloud_image" {
+  for_each = var.instances
+
   content_type = "iso"
-  node_name    = var.node_name
+  node_name    = each.value.node_name
   datastore_id = "local-lvm"
 
   url       = var.cloud_image_url
   file_name = var.cloud_image_filename
 }
 
-resource "proxmox_virtual_environment_vm" "this" {
-  name      = var.name
-  node_name = var.node_name
-  vm_id     = var.vm_id
+resource "proxmox_virtual_environment_vm" "instance" {
+  for_each = var.instances
+
+  name      = each.key
+  vm_id     = each.value.vm_id
+  node_name = each.value.node_name
+
+  lifecycle {
+    precondition {
+      condition     = length(local.conflicting_vm_ids) == 0
+      error_message = "The following vm_id(s) already exist in the Proxmox cluster: ${join(", ", local.conflicting_vm_ids)}"
+    }
+  }
 
   agent {
     enabled = true
   }
-
-  stop_on_destroy = false
 
   cpu {
     cores = var.vcpu
@@ -28,7 +37,7 @@ resource "proxmox_virtual_environment_vm" "this" {
 
   disk {
     datastore_id = "local-lvm"
-    import_from  = proxmox_virtual_environment_download_file.cloud_image.id
+    import_from  = proxmox_virtual_environment_download_file.cloud_image[each.key].id
     interface    = "virtio0"
     iothread     = true
     discard      = "on"
@@ -46,15 +55,17 @@ resource "proxmox_virtual_environment_vm" "this" {
       }
     }
 
-    user_data_file_id = proxmox_virtual_environment_file.user_data.id
-    meta_data_file_id = proxmox_virtual_environment_file.meta_data.id
+    user_data_file_id = proxmox_virtual_environment_file.user_data[each.key].id
+    meta_data_file_id = proxmox_virtual_environment_file.meta_data[each.key].id
   }
 }
 
 resource "proxmox_virtual_environment_file" "user_data" {
+  for_each = var.instances
+
   content_type = "snippets"
   datastore_id = "local"
-  node_name    = var.node_name
+  node_name    = each.value.node_name
 
   source_raw {
     data = <<-EOF
@@ -78,22 +89,48 @@ resource "proxmox_virtual_environment_file" "user_data" {
         - systemctl start qemu-guest-agent
     EOF
 
-    file_name = "${var.name}-user-data.yaml"
+    file_name = "${each.key}-user-data.yaml"
   }
 }
 
 resource "proxmox_virtual_environment_file" "meta_data" {
+  for_each = var.instances
+
   content_type = "snippets"
   datastore_id = "local"
-  node_name    = var.node_name
+  node_name    = each.value.node_name
 
   source_raw {
     data = <<-EOF
-      instance-id: ${var.name}
-      local-hostname: ${var.name}
+      instance-id: ${each.key}
+      local-hostname: ${each.key}
     EOF
 
-    file_name = "${var.name}-meta-data.yaml"
+    file_name = "${each.key}-meta-data.yaml"
   }
 }
 
+data "proxmox_virtual_environment_vms" "all" {}
+
+data "proxmox_virtual_environment_vm" "instances" {
+  for_each = var.instances
+
+  node_name = each.value.node_name
+  vm_id     = each.value.vm_id
+}
+
+# check which "requested" vm_ids conflicts with "existing" ones
+locals {
+  requested_vm_ids = [
+    for i in values(var.instances) : i.vm_id
+  ]
+
+  existing_vm_ids = [
+    for vm in data.proxmox_virtual_environment_vms.all.vms : vm.vm_id
+  ]
+
+  conflicting_vm_ids = setintersection(
+    toset(local.requested_vm_ids),
+    toset(local.existing_vm_ids)
+  )
+}

@@ -1,16 +1,17 @@
-variable "name" {
-  description = "VM name"
-  type        = string
-}
+variable "instances" {
+  description = "Map of VM instances (key = hostname)"
+  type = map(object({
+    vm_id     = number
+    node_name = string
+  }))
 
-variable "node_name" {
-  description = "Proxmox node name"
-  type        = string
-}
+  validation {
+    condition = length(distinct([
+      for i in values(var.instances) : i.vm_id
+    ])) == length(var.instances)
 
-variable "vm_id" {
-  description = "Proxmox VM ID"
-  type        = number
+    error_message = "All vm_id values must be unique within the instances map."
+  }
 }
 
 variable "memory" {
