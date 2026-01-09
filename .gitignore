@@ -1,4 +1,4 @@
-terraform/
+/terraform/
 
 terraform.tfstate
 
@@ -6,7 +6,3 @@ terraform.tfstate
 
 .terraform.lock.hcl
 .terraform.tfstate.lock.info
-
-docs/
-
-
