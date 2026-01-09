@@ -5,8 +5,6 @@ variable "instances" {
     node_name = string
   }))
 
-  default = 1
-
   validation {
     condition = length(distinct([
       for i in values(var.instances) : i.vm_id
