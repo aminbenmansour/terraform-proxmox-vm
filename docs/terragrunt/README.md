@@ -1,0 +1,19 @@
+#### Skeleton
+```bash
+live/
+├── terragrunt.hcl          # ROOT (shared config)
+├── production/
+│   ├── env.hcl
+│   ├── k8s-cp-nodes/
+│   │   └── terragrunt.hcl  # VM-specific
+│   └── k8s-worker-nodes/
+│       └── terragrunt.hcl
+└── staging/
+    ├── env.hcl
+    ├── k8s-cp-nodes/
+    │   └── terragrunt.hcl
+    └── k8s-worker-nodes/
+        └── terragrunt.hcl
+```
+
+> 💡 `//.?ref=` in Terragrunt? `//.` -> `module root` & `ref=` -> `git tag`
