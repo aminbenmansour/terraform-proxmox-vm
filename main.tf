@@ -1,6 +1,8 @@
 resource "proxmox_virtual_environment_download_file" "cloud_image" {
+  for_each = var.instances
+
   content_type = "iso"
-  node_name    = var.node_name
+  node_name    = each.value.node_name
   datastore_id = "local-lvm"
 
   url       = var.cloud_image_url
@@ -35,7 +37,7 @@ resource "proxmox_virtual_environment_vm" "instance" {
 
   disk {
     datastore_id = "local-lvm"
-    import_from  = proxmox_virtual_environment_download_file.cloud_image.id
+    import_from  = proxmox_virtual_environment_download_file.cloud_image[each.key].id
     interface    = "virtio0"
     iothread     = true
     discard      = "on"
@@ -53,15 +55,17 @@ resource "proxmox_virtual_environment_vm" "instance" {
       }
     }
 
-    user_data_file_id = proxmox_virtual_environment_file.user_data.id
+    user_data_file_id = proxmox_virtual_environment_file.user_data[each.key].id
     meta_data_file_id = proxmox_virtual_environment_file.meta_data[each.key].id
   }
 }
 
 resource "proxmox_virtual_environment_file" "user_data" {
+  for_each = var.instances
+
   content_type = "snippets"
   datastore_id = "local"
-  node_name    = var.node_name
+  node_name    = each.value.node_name
 
   source_raw {
     data = <<-EOF
@@ -85,7 +89,7 @@ resource "proxmox_virtual_environment_file" "user_data" {
         - systemctl start qemu-guest-agent
     EOF
 
-    file_name = "${var.name}-user-data.yaml"
+    file_name = "${each.key}-user-data.yaml"
   }
 }
 
