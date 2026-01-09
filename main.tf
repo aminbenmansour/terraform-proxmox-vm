@@ -99,3 +99,10 @@ resource "proxmox_virtual_environment_file" "meta_data" {
   }
 }
 
+data "proxmox_virtual_environment_vm" "instances" {
+  for_each = var.instances
+
+  node_name = each.value.node_name
+  vm_id     = each.value.vm_id
+}
+

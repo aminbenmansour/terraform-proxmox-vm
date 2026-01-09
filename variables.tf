@@ -16,21 +16,6 @@ variable "instances" {
   }
 }
 
-variable "name" {
-  description = "VM name"
-  type        = string
-}
-
-variable "node_name" {
-  description = "Proxmox node name"
-  type        = string
-}
-
-variable "vm_id" {
-  description = "Proxmox VM ID"
-  type        = number
-}
-
 variable "memory" {
   description = "Memory in MB"
   type        = number
