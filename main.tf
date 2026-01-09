@@ -14,6 +14,13 @@ resource "proxmox_virtual_environment_vm" "instance" {
   vm_id     = each.value.vm_id
   node_name = each.value.node_name
 
+  lifecycle {
+    precondition {
+      condition     = length(local.conflicting_vm_ids) == 0
+      error_message = "The following vm_id(s) already exist in the Proxmox cluster: ${join(", ", local.conflicting_vm_ids)}"
+    }
+  }
+
   agent {
     enabled = true
   }
@@ -84,7 +91,7 @@ resource "proxmox_virtual_environment_file" "user_data" {
 
 resource "proxmox_virtual_environment_file" "meta_data" {
   for_each = var.instances
-  
+
   content_type = "snippets"
   datastore_id = "local"
   node_name    = each.value.node_name
@@ -99,6 +106,8 @@ resource "proxmox_virtual_environment_file" "meta_data" {
   }
 }
 
+data "proxmox_virtual_environment_vms" "all" {}
+
 data "proxmox_virtual_environment_vm" "instances" {
   for_each = var.instances
 
@@ -106,3 +115,18 @@ data "proxmox_virtual_environment_vm" "instances" {
   vm_id     = each.value.vm_id
 }
 
+# check which "requested" vm_ids conflicts with "existing" ones
+locals {
+  requested_vm_ids = [
+    for i in values(var.instances) : i.vm_id
+  ]
+
+  existing_vm_ids = [
+    for vm in data.proxmox_virtual_environment_vms.all.vms : vm.vm_id
+  ]
+
+  conflicting_vm_ids = setintersection(
+    toset(local.requested_vm_ids),
+    toset(local.existing_vm_ids)
+  )
+}

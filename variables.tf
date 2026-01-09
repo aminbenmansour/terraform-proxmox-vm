@@ -12,7 +12,7 @@ variable "instances" {
       for i in values(var.instances) : i.vm_id
     ])) == length(var.instances)
 
-    error_message = "All vm_id values must be unique across instances."
+    error_message = "All vm_id values must be unique within the instances map."
   }
 }
 
