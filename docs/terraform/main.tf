@@ -8,8 +8,8 @@ module "k8s_cp_nodes" {
     cp-03 = { vm_id = 302, node_name = "pve-03" }
   }
 
-  memory   = 2048
-  vcpu     = 2
+  memory    = 2048
+  vcpu      = 2
   disk_size = "16G"
 
   cloud_image_url      = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
@@ -29,8 +29,8 @@ module "k8s_worker_nodes" {
     k8s-worker-03 = { vm_id = 306, node_name = "pve-03" }
   }
 
-  memory   = 2048
-  vcpu     = 2
+  memory    = 2048
+  vcpu      = 2
   disk_size = "16G"
 
   cloud_image_url      = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
