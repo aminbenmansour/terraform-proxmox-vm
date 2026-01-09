@@ -1,3 +1,21 @@
+variable "instances" {
+  description = "Map of VM instances (key = hostname)"
+  type = map(object({
+    vm_id     = number
+    node_name = string
+  }))
+
+  default = 1
+
+  validation {
+    condition = length(distinct([
+      for i in values(var.instances) : i.vm_id
+    ])) == length(var.instances)
+
+    error_message = "All vm_id values must be unique across instances."
+  }
+}
+
 variable "name" {
   description = "VM name"
   type        = string

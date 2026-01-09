@@ -7,16 +7,16 @@ resource "proxmox_virtual_environment_download_file" "cloud_image" {
   file_name = var.cloud_image_filename
 }
 
-resource "proxmox_virtual_environment_vm" "this" {
-  name      = var.name
-  node_name = var.node_name
-  vm_id     = var.vm_id
+resource "proxmox_virtual_environment_vm" "instance" {
+  for_each = var.instances
+
+  name      = each.key
+  vm_id     = each.value.vm_id
+  node_name = each.value.node_name
 
   agent {
     enabled = true
   }
-
-  stop_on_destroy = false
 
   cpu {
     cores = var.vcpu
@@ -47,7 +47,7 @@ resource "proxmox_virtual_environment_vm" "this" {
     }
 
     user_data_file_id = proxmox_virtual_environment_file.user_data.id
-    meta_data_file_id = proxmox_virtual_environment_file.meta_data.id
+    meta_data_file_id = proxmox_virtual_environment_file.meta_data[each.key].id
   }
 }
 
@@ -83,17 +83,19 @@ resource "proxmox_virtual_environment_file" "user_data" {
 }
 
 resource "proxmox_virtual_environment_file" "meta_data" {
+  for_each = var.instances
+  
   content_type = "snippets"
   datastore_id = "local"
-  node_name    = var.node_name
+  node_name    = each.value.node_name
 
   source_raw {
     data = <<-EOF
-      instance-id: ${var.name}
-      local-hostname: ${var.name}
+      instance-id: ${each.key}
+      local-hostname: ${each.key}
     EOF
 
-    file_name = "${var.name}-meta-data.yaml"
+    file_name = "${each.key}-meta-data.yaml"
   }
 }
 
